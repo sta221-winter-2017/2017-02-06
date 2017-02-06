@@ -1,0 +1,365 @@
+---
+title: "STA221"
+author: "Neil Montgomery"
+date: "Last edited: `r format(Sys.time(), '%Y-%m-%d %H:%M')`"
+output: 
+  beamer_presentation:
+    keep_tex: TRUE
+    incremental: TRUE
+    df_print: tibble
+    fig_caption: FALSE
+classoption: aspectratio=169
+header-includes:
+- \newcommand{\ve}{\varepsilon}
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE,
+                      dev='pdf', fig.width=5, fig.asp=0.618, fig.align='center')
+options(tibble.width=70, scipen = 999, tibble.print_min=5)
+library(tidyverse)
+library(readxl)
+```
+
+
+## statistical properties of $b_1$
+
+Start with the basic simple linear regression model:
+$$y = \beta_0 + \beta_1 x + \ve$$
+in which the error follows a $N(0,\sigma)$ distribution. 
+
+The slope estimator $b_1$ turns out to follow a normal distribtion with mean $\beta_1$ and standard deviation:
+$$\frac{\sigma}{\sqrt{S_{xx}}}$$
+
+(Recall $S_{xx} = \sum(x_i - \overline x)^2$)
+
+(Note: there is a typo on the first formula in section 24.2 - the $s_x$ should not be under the $\sqrt{\ \ }$.)
+
+## relating various formulae to the simulation results
+
+When I simulated thousands of $b_1$ from datasets with a variety of properties, we saw the following:
+
+* histograms of simulated $b_1$ were symmetric and bell shaped. In fact, normal! Why? Let's look at the formula for $b_1$:
+$$b_1 = \frac{\sum (x_i - \overline x)(y_i - \overline y)}{\sum(x_i - \overline x)^2}
+=\sum d_i (y_i - \overline y)$$
+where the $d_i$ are constants.
+
+* Less variation when the underlying $\sigma$ was smaller.
+
+* Less variation when the $x$'s were less spread out.
+
+* Less variation when the sample size was larger. 
+
+## statistical properties of $b_1$
+
+We have:
+$$\frac{b_1 - \beta_1}{{\sigma} / {\sqrt{S_{xx}}}} \sim N(0,1)$$
+
+and p-values and confidence intervals come from this---BAM we're done.
+
+\pause Except we would never know the true value of $\sigma$. This is the third simple regression parameter---a nuisance we'll have to deal with.
+
+\pause We can estimate $\sigma$ using the "average" of the squared residuals:
+$$s_e = \frac{\sum (y_i - \hat y_i)^2}{n-2}$$
+
+## statistical properties of $b_1$
+
+Who wants to guess what distribution this will have:
+
+$$\frac{b_1 - \beta_1}{{s_e} / {\sqrt{S_{xx}}}} \sim \ ???$$
+
+## hypothesis testing for $\beta_1$
+
+The principal hypothesis test concerns whether there is any linear relationship at all between $x$ and $y$. The null hypothesis immediately presents itself:
+
+$$H_0: \beta_1 = 0$$
+
+\pause And it works the same way any other hypothesis test works. Use the data to compute:
+$$\frac{b_1 - 0}{{s_e} / {\sqrt{S_{xx}}}}$$
+and get the probability of being "further away" from $H_0$, according to the ??? distribution.
+
+## example - body fat versus weight
+
+```{r}
+bodyfat <- read_csv("Body_fat.csv")
+bodyfat %>% 
+  ggplot(aes(x=Weight, y=`Pct BF`)) + geom_point() + 
+  geom_smooth(method="lm", se=FALSE)
+```
+
+## example - body fat versus weight
+
+```{r}
+source("multiplot.R")
+options(scipen=6)
+bf_wt <- bodyfat %>% 
+  lm(`Pct BF` ~ Weight, data = .) 
+short_print_lm(summary(bf_wt))
+```
+
+## this table translated into formulae
+
+\ttfamily
+\renewcommand{\arraystretch}{1.5}
+\begin{table}[ht]
+\begin{tabular}{rrrrr}
+Coefficients: & & &\\
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+$b_0$ & (Not & often & very &relevant) \\ 
+$b_1$ & $\frac{S_{xy}}{S_{xx}}$ & $\frac{s_e}{\sqrt{S_{xx}}}$ & $\frac{b_0 - 0}{s_e/\sqrt{S_{xx}}}$ & the p-value \\ 
+\end{tabular}
+\end{table}
+
+\-\-\-
+
+\pause A line of questionable utility.
+
+\pause Residual standard error: $s_e$ on $n-2$ degrees of freedom
+
+\pause Other stuff at the bottom not yet explained...
+
+## example - body fat versus height
+
+```{r}
+bodyfat %>% 
+  ggplot(aes(x=Height, y=`Pct BF`)) + geom_point() + 
+  geom_smooth(method="lm", se=FALSE)
+```
+
+## example - body fat versus height
+
+```{r}
+bf_ht <- bodyfat %>% 
+  lm(`Pct BF` ~ Height, data = .) 
+  
+short_print_lm(summary(bf_ht))
+```
+
+## confidence interval for the true slope $\beta_1$
+
+95\% confidence intervals are all pretty much the same, based on:
+$$\frac{\text{estimator } - \text{ parameter}}{SE(\text{estimator})} \sim \text{ something symmetric and bell shaped}$$
+resulting in a formula:
+$$\text{estimator} \pm \text{``2''} SE(\text{estimator})$$
+
+\pause In the case of $\beta_1$ we have:
+$$\frac{b_1 - \beta_1}{s_e/\sqrt{S_{xx}}} \sim \ ???$$
+result in a 95\% C.I. of:
+$$b_1 \pm \text{???}_{???} \frac{s_e}{\sqrt{S_{xx}}}$$
+
+## example C.I.'s for $\beta_1$ - body fat versus weight and height
+
+Since $n=250$, our value of "2" is in this case: `r qt(0.975, 248)`
+
+```{r}
+short_print_lm(summary(bf_wt), signif.stars = FALSE, short=TRUE)
+short_print_lm(summary(bf_ht), signif.stars = FALSE, short=TRUE)
+```
+
+# $R^2$
+
+## $R^2$
+
+The $y$ values are random. They aren't all the same. What "explains" the differences in the $y$ values? 
+
+\pause A = all "model" | B = "typical" | C = all "error":
+
+```{r fig.width=4}
+set.seed(3)
+x <- seq(1, 5, length.out = 20)
+e <- rnorm(20, 0, 0.25)
+e <- e - mean(e)
+y1 <- 1 + 0.25*x
+y2 <- y1 + e
+y3 <- mean(y1) + e
+
+rsq_data <- data_frame(d=factor(rep(c("A", "B", "C"), each=20)), x=c(x,x,x), y=c(y1,y2,y3))
+rsq_data %>% 
+  ggplot(aes(x=x, y=y)) + geom_point() + geom_smooth(method="lm", se=FALSE) +
+  geom_hline(yintercept = mean(y1)) + facet_grid(. ~ d) 
+```
+
+## $R^2$ conceptual building blocks; a "sum-of-squares" decomposition
+
+$$\text{variation in the $y$ } = \text{ variation due to the model } + \text{ variation due to error }$$
+
+
+\begin{align*}
+\sum (y_i - \overline y)^2 &= \onslide<2->{\sum (y_i - \overline y)^2}
++ \onslide<3->{\sum (\hat y_i - \hat y_i)^2\\}
+\onslide<4->{SS_{Total} &= SS_{Regression} + SS_{Error}}
+\end{align*}
+
+## sum of squares decomposition, graphically
+
+```{r}
+library(broom)
+rsq_data_typical <- filter(rsq_data, d=="B")
+rsq_fit <- lm(y~x, data=rsq_data_typical)
+augment(rsq_fit) %>% 
+  mutate(ybar = mean(rsq_data_typical$y),
+         xp=x + 0.012, xm=x-0.012) %>% 
+  ggplot(aes(x=x,y=y)) + 
+  geom_point() + 
+  geom_smooth(method="lm", se=FALSE) + 
+  geom_hline(aes(yintercept = ybar), color="green") + 
+  geom_segment(aes(x=x, y=y, xend=x, yend=.fitted), color="red") + 
+  geom_segment(aes(x=xp, y=ybar, xend=xp, yend=.fitted), color="blue") + 
+  geom_segment(aes(x=xm, y=y, xend=xm, yend=ybar), color="green") + 
+  coord_cartesian(xlim = c(2,4))
+```
+
+
+## $R^2$ definition
+
+$$R^2 = \frac{SS_{Regression}}{SS_{Total}} = 1 - \frac{SS_{Error}}{SS_{Total}}$$
+
+\pause "The proportion of variation explained by the (regression) model."
+
+\pause People prone to excessive drama in their lives might call this "THE COEFFICIENT OF DETERMINATION!!!"
+
+\pause Although it is not a coefficient, and it does not really determine anything. It's just a mildly useful number.
+
+\pause Keep in mind it is *one number* that is being used to summarize an entire empirical bivariate relationship. And it isn't even the *best* number.
+
+## Some $R^2$ values
+
+```{r}
+set.seed(2)
+n <- 40
+x <- seq(1, 10, length.out = n)
+y1 <-  1 + x + rnorm(n, 0, 0.1)
+p1 <- data.frame(x, y1) %>% 
+  ggplot(aes(x=x, y=y1)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y1)^2, 3))))
+
+y2 <- 1 + x + rnorm(n, 0, 1)
+p2 <- data.frame(x, y2) %>% 
+  ggplot(aes(x=x, y=y2)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y2)^2, 3))))
+
+y3 <- 1 + x + rnorm(n, 0, 5)
+p3 <- data.frame(x, y3) %>% 
+  ggplot(aes(x=x, y=y3)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y3)^2, 3))))
+
+y4 <- -2 + (x-5.5)^2/10 + rnorm(n,0,0.5)
+p4 <- data.frame(x,y4) %>% 
+  ggplot(aes(x=x, y=y4)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y4)^2, 6))))
+
+
+multiplot(p1,p2,p3,p4, cols = 2)
+```
+
+## Another limitation: sample size effect
+
+Both simulated datasets are from the ***same underlying model*** 
+
+(happens to be $y = 1 + 1 \cdot x + \varepsilon$ with $\varepsilon \sim N(0, 2)$)
+
+```{r, fig.width=4}
+set.seed(42)
+y6 <- 1 + x + rnorm(n, 0, 2)
+p5 <- data.frame(x, y6) %>% 
+  ggplot(aes(x=x, y=y6)) + geom_point() + ylim(-2.5, 17.5) + 
+  ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y6)^2, 3))))
+
+x2 <- seq(1, 10, length.out = 2*n)
+y7 <- 1 + x2 + rnorm(2*n, 0, 2)
+p6 <- data.frame(x2, y7) %>% 
+  ggplot(aes(x=x2, y=y7)) + geom_point() + ylim(-2.5, 17.5) +
+  ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x2, y7)^2, 3))))
+
+multiplot(p5,p6,cols = 2)
+```
+
+# regression model assumption (etc.) verification
+
+## recap model and calculation requirements
+
+The model is:
+$$y = \beta_0 + \beta_1 x + \ve \text{ with } \ve \sim N(0, \sigma)$$
+
+\pause The requirements that should always be checked are:
+
+* Linear relationship between $y$ and $x$.
+
+* Variation plus/minus the line is of constant magnitude.
+
+* Error has a normal distribution.
+
+\pause Also, the observations should be independent, but this is hard to verify (a plot of values versus time/order could be appropriate.)
+
+\pause We will verify graphically, using various plots of the *residuals* $\hat\ve_i = y_i - \hat y_i$
+
+## verify normality with normal quantile (or normal probability) plot of $\hat\ve_i$
+
+```{r}
+bf_wt_aug <- augment(bf_wt)
+
+bf_wt_aug %>% 
+  ggplot(aes(sample = .resid)) + geom_qq()
+```
+
+## verify linearity with plot of $\hat\ve_i$ versus $\hat y_i$
+
+```{r}
+bf_wt_aug %>% 
+  ggplot(aes(x=.resid, y=.fitted)) + geom_point()
+```
+
+## verify equal variance with (same!) plot of $\hat\ve_i$ versus $\hat y_i$
+
+```{r}
+bf_wt_aug %>% 
+  ggplot(aes(x=.resid, y=.fitted)) + geom_point()
+```
+
+# estimation and prediction with regression models
+
+## estimate the mean response at a new $x$ value
+
+Suppose you want to estimate the mean "response" at some new $x_\nu$ (may
+or may not be one of the original $x$'s.)
+
+\pause The *true value* for the mean response is:
+$$\mu_\nu = \beta_0 + \beta_1 x_\nu$$
+
+\pause What's the "obvious" best guess using the data?
+$$\hat\mu_\nu = b_0 + b_1 x_\nu$$
+
+## estimate the mean response---with confidence
+
+A confidence interval will be as usual based on:
+$$\frac{\hat\mu_\nu - \mu_\nu}{s.e.(\hat\mu_\nu - \mu_\nu)} \sim \ ???$$
+
+\pause The standard error of $\hat\mu_\nu - \mu_\nu$ is:
+$$s_e\sqrt{\frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
+
+\pause So the 95\% C.I. for the mean response at $x_\nu$ will be:
+$$\hat\mu_\nu \pm ``2" s_e\sqrt{\frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
+
+## picture of 95\% CI for mean response - weight model
+
+```{r}
+bodyfat %>% 
+  ggplot(aes(x=Weight, y=`Pct BF`)) + geom_point(cex=0.5) + geom_smooth(method="lm")
+```
+
+## predict $y$ at a new $x$ value
+
+Suppose you want to predict what $y$ might be at some new $x_\nu$ (may
+or may not be one of the original $x$'s.)
+
+\pause \textbf{There is no \textit{true} value. We are predicting something random (and un-knowable)---not estimating something fixed (but unknown.)}
+
+\pause What's the "obvious" best guess using the data?
+$$\hat y_\nu = b_0 + b_1 x_\nu$$
+The *same* guess as the estimate for $\mu_\nu$. 
+
+\pause The variation inherent in such a prediction is different.
+
+## predict a new value---with confidence
+
+A prediction interval will be based on, similar to a confidence interval:
+$$\frac{\hat y_\nu - y_\nu}{s.e.(\hat y_\nu - y_\nu)} \sim \ ???$$
+
+\pause The standard error of $\hat\mu_\nu - \mu_\nu$ is:
+$$s_e\sqrt{1+ \frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
