@@ -143,9 +143,9 @@ resulting in a formula:
 $$\text{estimator} \pm \text{``2''} SE(\text{estimator})$$
 
 \pause In the case of $\beta_1$ we have:
-$$\frac{b_1 - \beta_1}{s_e/\sqrt{S_{xx}}} \sim \ ???$$
+$$\frac{b_1 - \beta_1}{s_e/\sqrt{S_{xx}}} \sim t_{n-2}$$
 result in a 95\% C.I. of:
-$$b_1 \pm \text{???}_{???} \frac{s_e}{\sqrt{S_{xx}}}$$
+$$b_1 \pm t^*_{n-2} \frac{s_e}{\sqrt{S_{xx}}}$$
 
 ## example C.I.'s for $\beta_1$ - body fat versus weight and height
 
@@ -306,12 +306,12 @@ bf_wt_aug %>%
 
 ```{r}
 bf_wt_aug %>% 
-  ggplot(aes(x=.resid, y=.fitted)) + geom_point()
+  ggplot(aes(y=.resid, x=.fitted)) + geom_point()
 ```
 
 ## verify equal variance with (same!) plot of $\hat\ve_i$ versus $\hat y_i$
 
 ```{r}
 bf_wt_aug %>% 
-  ggplot(aes(x=.resid, y=.fitted)) + geom_point()
+  ggplot(aes(y=.resid, x=.fitted)) + geom_point()
 ```
