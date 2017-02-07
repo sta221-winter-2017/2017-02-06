@@ -46,7 +46,7 @@ where the $d_i$ are constants.
 
 * Less variation when the underlying $\sigma$ was smaller.
 
-* Less variation when the $x$'s were less spread out.
+* Less variation when the $x$'s were more spread out.
 
 * Less variation when the sample size was larger. 
 
@@ -60,13 +60,13 @@ and p-values and confidence intervals come from this---BAM we're done.
 \pause Except we would never know the true value of $\sigma$. This is the third simple regression parameter---a nuisance we'll have to deal with.
 
 \pause We can estimate $\sigma$ using the "average" of the squared residuals:
-$$s_e = \frac{\sum (y_i - \hat y_i)^2}{n-2}$$
+$$s^2_e = \frac{\sum (y_i - \hat y_i)^2}{n-2}$$
 
 ## statistical properties of $b_1$
 
 Who wants to guess what distribution this will have:
 
-$$\frac{b_1 - \beta_1}{{s_e} / {\sqrt{S_{xx}}}} \sim \ ???$$
+$$\frac{b_1 - \beta_1}{{s_e} / {\sqrt{S_{xx}}}} \sim t_{n-2}$$
 
 ## hypothesis testing for $\beta_1$
 
@@ -76,7 +76,7 @@ $$H_0: \beta_1 = 0$$
 
 \pause And it works the same way any other hypothesis test works. Use the data to compute:
 $$\frac{b_1 - 0}{{s_e} / {\sqrt{S_{xx}}}}$$
-and get the probability of being "further away" from $H_0$, according to the ??? distribution.
+and get the probability of being "further away" from $H_0$, according to the $t_{n-2}$ distribution.
 
 ## example - body fat versus weight
 
@@ -106,7 +106,7 @@ short_print_lm(summary(bf_wt))
 Coefficients: & & &\\
  & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
 $b_0$ & (Not & often & very &relevant) \\ 
-$b_1$ & $\frac{S_{xy}}{S_{xx}}$ & $\frac{s_e}{\sqrt{S_{xx}}}$ & $\frac{b_0 - 0}{s_e/\sqrt{S_{xx}}}$ & the p-value \\ 
+$b_1$ & $\frac{S_{xy}}{S_{xx}}$ & $\frac{s_e}{\sqrt{S_{xx}}}$ & $\frac{b_1 - 0}{s_e/\sqrt{S_{xx}}}$ & the p-value \\ 
 \end{tabular}
 \end{table}
 
@@ -185,8 +185,8 @@ $$\text{variation in the $y$ } = \text{ variation due to the model } + \text{ va
 
 
 \begin{align*}
-\sum (y_i - \overline y)^2 &= \onslide<2->{\sum (y_i - \overline y)^2}
-+ \onslide<3->{\sum (\hat y_i - \hat y_i)^2\\}
+\sum (y_i - \overline y)^2 &= \onslide<2->{\sum (\hat y_i - \overline y)^2}
++ \onslide<3->{\sum ( y_i - \hat y_i)^2\\}
 \onslide<4->{SS_{Total} &= SS_{Regression} + SS_{Error}}
 \end{align*}
 
@@ -206,7 +206,11 @@ augment(rsq_fit) %>%
   geom_segment(aes(x=x, y=y, xend=x, yend=.fitted), color="red") + 
   geom_segment(aes(x=xp, y=ybar, xend=xp, yend=.fitted), color="blue") + 
   geom_segment(aes(x=xm, y=y, xend=xm, yend=ybar), color="green") + 
-  coord_cartesian(xlim = c(2,4))
+  coord_cartesian(xlim = c(2,4)) + 
+  annotate("text", x=2.2, y=2.5, label="Total", color="green") + 
+  annotate("text", x=2.6, y=2.5, label="Regression", color="blue") + 
+  annotate("text", x=3.0, y=2.5, label="Error", color="red")
+  
 ```
 
 
@@ -232,7 +236,7 @@ y1 <-  1 + x + rnorm(n, 0, 0.1)
 p1 <- data.frame(x, y1) %>% 
   ggplot(aes(x=x, y=y1)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y1)^2, 3))))
 
-y2 <- 1 + x + rnorm(n, 0, 1)
+y2 <- 1 - x + rnorm(n, 0, 1)
 p2 <- data.frame(x, y2) %>% 
   ggplot(aes(x=x, y=y2)) + geom_point() + ggtitle(substitute(paste(R^2, " = ", R2), list(R2 = round(cor(x, y2)^2, 3))))
 
@@ -311,55 +315,3 @@ bf_wt_aug %>%
 bf_wt_aug %>% 
   ggplot(aes(x=.resid, y=.fitted)) + geom_point()
 ```
-
-# estimation and prediction with regression models
-
-## estimate the mean response at a new $x$ value
-
-Suppose you want to estimate the mean "response" at some new $x_\nu$ (may
-or may not be one of the original $x$'s.)
-
-\pause The *true value* for the mean response is:
-$$\mu_\nu = \beta_0 + \beta_1 x_\nu$$
-
-\pause What's the "obvious" best guess using the data?
-$$\hat\mu_\nu = b_0 + b_1 x_\nu$$
-
-## estimate the mean response---with confidence
-
-A confidence interval will be as usual based on:
-$$\frac{\hat\mu_\nu - \mu_\nu}{s.e.(\hat\mu_\nu - \mu_\nu)} \sim \ ???$$
-
-\pause The standard error of $\hat\mu_\nu - \mu_\nu$ is:
-$$s_e\sqrt{\frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
-
-\pause So the 95\% C.I. for the mean response at $x_\nu$ will be:
-$$\hat\mu_\nu \pm ``2" s_e\sqrt{\frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
-
-## picture of 95\% CI for mean response - weight model
-
-```{r}
-bodyfat %>% 
-  ggplot(aes(x=Weight, y=`Pct BF`)) + geom_point(cex=0.5) + geom_smooth(method="lm")
-```
-
-## predict $y$ at a new $x$ value
-
-Suppose you want to predict what $y$ might be at some new $x_\nu$ (may
-or may not be one of the original $x$'s.)
-
-\pause \textbf{There is no \textit{true} value. We are predicting something random (and un-knowable)---not estimating something fixed (but unknown.)}
-
-\pause What's the "obvious" best guess using the data?
-$$\hat y_\nu = b_0 + b_1 x_\nu$$
-The *same* guess as the estimate for $\mu_\nu$. 
-
-\pause The variation inherent in such a prediction is different.
-
-## predict a new value---with confidence
-
-A prediction interval will be based on, similar to a confidence interval:
-$$\frac{\hat y_\nu - y_\nu}{s.e.(\hat y_\nu - y_\nu)} \sim \ ???$$
-
-\pause The standard error of $\hat\mu_\nu - \mu_\nu$ is:
-$$s_e\sqrt{1+ \frac{1}{n} + \frac{(x_\nu - \overline x)^2}{S_{xx}}}$$
